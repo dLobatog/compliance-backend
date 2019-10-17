@@ -22,11 +22,11 @@ module Types
 
     # rubocop:disable AbcSize
     def rules(args = {})
-      selected_columns = args[:lookahead].selections.map(&:name) &
-                         ::Rule.column_names.map(&:to_sym)
-      rules = object.rules.select(selected_columns << :id).where(
-        id: RuleResult.selected.pluck(:rule_id)
-      )
+      selected_columns = (args[:lookahead].selections.map(&:name) &
+                         ::Rule.column_names.map(&:to_sym)) << :id
+      host = Host.find(args[:system_id]) if args[:system_id].present?
+      rules = object.rules_for_system(host, selected_columns) if host.present?
+      rules = object.rules.select(selected_columns) if host.blank?
       rules = rules.with_identifier(args[:identifier]) if args.dig(:identifier)
       rules = rules.with_references(args[:references]) if args.dig(:references)
       rules = lookahead_includes(args[:lookahead], rules,
